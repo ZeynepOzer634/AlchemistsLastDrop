@@ -1,96 +1,124 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+
+#include "Core/ALOCoreTypes.h"
+#include "Components/ALOInventoryComponent.h"
+#include "Components/ALOHealthComponent.h"
+#include "Components/ALOInteractionComponent.h"
+
 #include "AlchemistsLastDropCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UInputComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-/**
- *  A simple player-controllable third person character
- *  Implements a controllable orbiting camera
- */
 UCLASS(abstract)
-class AAlchemistsLastDropCharacter : public ACharacter
+class ALCHEMISTSLASTDROP_API AAlchemistsLastDropCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
-	
-protected:
-
-	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* JumpAction;
-
-	/** Move Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* MoveAction;
-
-	/** Look Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* LookAction;
-
-	/** Mouse Look Input Action */
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* MouseLookAction;
-
 public:
 
-	/** Constructor */
-	AAlchemistsLastDropCharacter();	
+	AAlchemistsLastDropCharacter();
 
 protected:
 
-	/** Initialize input action bindings */
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-protected:
-
-	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
-
-	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void HandleInteract();
+	void HandleDash();
+	void HandleAttack();
+
+	UFUNCTION()
+	void HandlePlayerDeath(AActor* DeadActor);
+
+protected:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* CameraBoom;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FollowCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* MoveAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* MouseLookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* DashAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* AttackAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ALO|Movement")
+	float DashStrength = 2500.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ALO|Gameplay")
+	EALOPotion CurrentHeldPotion = EALOPotion::None;
+
+private:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ALO|Components", meta = (AllowPrivateAccess = "true"))
+	UALOInventoryComponent* InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ALO|Components", meta = (AllowPrivateAccess = "true"))
+	UALOHealthComponent* HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ALO|Components", meta = (AllowPrivateAccess = "true"))
+	UALOInteractionComponent* InteractionComponent;
+
 public:
 
-	/** Handles move inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
+	UFUNCTION(BlueprintCallable, Category = "ALO|Player")
+	UALOInventoryComponent* GetInventoryComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "ALO|Player")
+	UALOHealthComponent* GetHealthComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "ALO|Player")
+	UALOInteractionComponent* GetInteractionComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoMove(float Right, float Forward);
 
-	/** Handles look inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
+	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoLook(float Yaw, float Pitch);
 
-	/** Handles jump pressed inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
+	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoJumpStart();
 
-	/** Handles jump pressed inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
+	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoJumpEnd();
 
-public:
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	UFUNCTION(BlueprintCallable, Category = "ALO|Player")
+	EALOPotion GetCurrentHeldPotion() const { return CurrentHeldPotion; }
+
+	UFUNCTION(BlueprintCallable, Category = "ALO|Player")
+	void SetCurrentHeldPotion(EALOPotion NewPotion) { CurrentHeldPotion = NewPotion; }
 };
-
